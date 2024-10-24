@@ -1,0 +1,18 @@
+* {
+  box-sizing: border-box;
+}
+
+#id1 {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-rows: 10% 1fr 10%;
+}
+
+.container {
+  max-width: 90%;
+  width: 90%;
+  max-height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
