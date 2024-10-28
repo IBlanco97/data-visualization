@@ -3,7 +3,8 @@
 ## Descripción
 Este proyecto muestra mis habilidades en desarrollo web con React, y en visualización y análisis de datos.
 
-##Screenshot
+## Screenshot
+![Captura de pantalla](/screenshot.png)
 
 ## Tecnologías Utilizadas
 - React
