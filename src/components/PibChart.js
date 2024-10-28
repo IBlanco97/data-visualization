@@ -26,7 +26,9 @@ import "./PibChart.css";
 
 const PibChart = () => {
 
+  const [sheet, setSheet] = useState(undefined);
   const [countries, setCountries] = useState(undefined);
+  const [selectedCountry, setSelectedCountry] = useState("Cuba");
   const values = [];
 
   const [data, setData] = useState({
@@ -42,11 +44,52 @@ const PibChart = () => {
         ],
     });
     
-    useEffect(() => {
-      const fetchData = async (headers_row, data_row, init, end) => {
+    const fetchData = async (headers_row, data_row, init, end, sheet1) => {
         
-        var result = undefined;
+      var result = undefined;
 
+      //Extraer datos del eje X desde la fila 4, columnas 35 a 65        
+      const labels = [];
+      console.log("sheet1", sheet1);
+      readSheetRange(labels, headers_row, headers_row, init, end, sheet1);  
+      readSheetRange(values, data_row, data_row, init, end, sheet1);
+                  
+        result = {
+          labels: labels,
+          datasets: [
+            {
+              label: "PIB",
+              data: values,
+              fill: false,
+              backgroundColor: "rgba(75,192,192,0.4)",
+              borderColor: "rgba(75,192,192,1)",
+            },
+          ],
+        };  
+
+      return result;
+    };
+
+    const readSheetRange = (rowList, rowInit, rowEnd, colInit, colEnd, sheet1) => {
+      for (let row = rowInit; row <= rowEnd; row++) {
+        for (let col = colInit; col <= colEnd; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+            const cell = sheet1[cellAddress];
+            rowList.push(cell ? cell.v : "Col${col}");
+          }
+        }
+    }
+
+    useEffect(() => {
+
+      const fetchCountries = (sheet1) => {
+        const countriesNew = [];
+        readSheetRange(countriesNew, 4, 269, 0, 0, sheet1);
+        setCountries(countriesNew);
+        return countriesNew;
+      }
+
+      const loadData = async () => {
         try {
           const response = await fetch("/resources/API_NY.GDP.PCAP.CD_DS2_en_excel_v2_31806.xls");
           if (!response.ok) {
@@ -57,48 +100,17 @@ const PibChart = () => {
           const workbook = XLSX.read(data, { type: "array"});
         
           const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          
-          //Extraer datos del eje X desde la fila 4, columnas 35 a 65        
-          const labels = [];
-          readSheetRow(labels, headers_row, init, end, sheet);  
-          readSheetRow(values, data_row, init, end, sheet);
-          
-          result = {
-            labels: labels,
-            datasets: [
-              {
-                label: "PIB",
-                data: values,
-                fill: false,
-                backgroundColor: "rgba(75,192,192,0.4)",
-                borderColor: "rgba(75,192,192,1)",
-              },
-            ],
-          };
+          const sheet1 = workbook.Sheets[sheetName];
+          setSheet(sheet1);
 
+          const result = await fetchData(3, 54, 4, 64, sheet1);
+          fetchCountries(sheet1); 
+          setData(result);
+                  
         } catch (error) {
           console.error("Error fetching or processing Excel file:", error);
-        }  
-
-        console.log("finally")        
-        console.log(result)
-        return result;
+        }
       };
-
-      const readSheetRow = (rowList, rowIndex, init, end, sheet) => {
-        for (let col = init; col <= end; col++) {
-            const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: col });
-            const cell = sheet[cellAddress];
-            rowList.push(cell ? cell.v : "Col${col}");
-          }
-      }
-
-      const loadData = async () => {
-        const result = await fetchData(3, 54, 14, 64);
-        setData(result);
-      };
-
       loadData();
     }, []);
 
@@ -138,11 +150,45 @@ const PibChart = () => {
     },
   };
 
+  const handleChange = async (event) => {
+    setSelectedCountry(event.target.value);
+    const index = countries.indexOf(event.target.value);
+    try {
+      console.log("index", index+3)
+      const valuesNew = [];
+      readSheetRange(valuesNew, index + 4, index + 4, 4, 64, sheet);
+      const dataNew = {
+        labels: data.labels,
+        datasets: [
+            {
+                label: "PIB",
+                data: valuesNew,
+                fill: false,
+                backgroundColor: "rgba(75,192,192,0.4)",
+                borderColor: "rgba(75,192,192,1)",
+            },
+        ],
+      };
+      setData(dataNew);
+      console.log("handlechange:", result)
+    } catch(error) {
+      console.error()
+    }
+  }
+
   return (
     <div className="pibChart">
-        <h1>Cuba PIB per capita (US$)</h1>
-        <select></select>
-        <Line data={data} options={options}/>
+        <h1>{selectedCountry} PIB per capita (US$)</h1>
+        <div className="flex">
+          <Line data={data} options={options}/>
+        </div>
+        <select value={selectedCountry} onChange={handleChange}>          
+          {countries.map((country) => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}          
+        </select>
     </div>);
     
 };

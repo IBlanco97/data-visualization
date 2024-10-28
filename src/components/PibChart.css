@@ -1,6 +1,11 @@
 .pibChart {
-  max-height: 95vh;
-  background-color: lightcyan;
+  max-height: 80vh;
   margin-left: 5%;
   margin-right: 5%;
+}
+
+.flex {
+  display: flex;
+  align-content: center;
+  max-height: 80vh;
 }
